@@ -3,8 +3,8 @@ Inspired by https://github.com/liixini/skwd
 
 Pretty beta at the moment expect bugs...
 
-Screenshots:
-
+Demo in  reddit:
+https://www.reddit.com/r/unixporn/comments/1rz6nil/oc_made_a_command_based_quickshell_wallpaper/
 
 Dependencies:
 ffmpeg, linux-wallpaper-engine, quickshell, pywal, swww 
