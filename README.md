@@ -17,6 +17,12 @@ I cant add check for every tool and their locations if someone else does it they
 Installation:
 
 Clone this repository and run setup.sh and follow along.
+
+```
+git clone https://github.com/Aino-Chan/wallpaper-selector.git
+cd wallpaper-selector
+./setup.sh
+```
 If you dont want to do that you can copy and edit scripts on scripts folder and copy them to ~/.local/bin and quickshell files to ~/.config/quickshell/ and edit freely if you lack dependencies that wont work so install script is recommended.
 
 Scripts on scripts folder is as is copied pasted from what I use except 2 lines that hook up css generating scripts of mine dont expect for them to work out of box they are there for ease of copying and editing incase install script fails.
