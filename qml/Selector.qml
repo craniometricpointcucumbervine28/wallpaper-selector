@@ -1573,9 +1573,9 @@ Scope {
                             if (window.showDynamic)       parts.push(" Dynamic")
                             if (window.showMatureContent && !showStatic) parts.push(" NSFW")
                             if (window.playlistActive) {
-                                parts.push("󰐑 Playlist " + (window.showPlaylist ? "only " : "") + window.playlist.length + (window.playlistShuffle ? " " : ""))
+                                parts.push("󰐑 Playlist " + (window.showPlaylist ? "only " : "") + window.playlist.length + (window.playlistShuffle ? " " : ""))
                             } else if (window.playlist.length > 0) {
-                                parts.push(" Playlist " + (window.showPlaylist ? "only " : "") + window.playlist.length + (window.playlistShuffle ? " " : ""))
+                                parts.push(" Playlist " + (window.showPlaylist ? "only " : "") + window.playlist.length + (window.playlistShuffle ? " " : ""))
                             } else if (window.showPlaylist) {
                                 parts.push(" Playlist only")
                             }
