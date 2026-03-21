@@ -43,9 +43,19 @@ else
 fi
 [[ ${#MONITORS[@]} -eq 0 ]] && MONITORS=("eDP-1")
 
+BLACK_PNG="/tmp/wallpaper-black.png"
+if [[ ! -f "$BLACK_PNG" ]]; then
+    ffmpeg -y -f lavfi -i color=black:size=1920x1080 -frames:v 1 "$BLACK_PNG" >/dev/null 2>&1 || true
+fi
+
+if [[ -f "$BLACK_PNG" ]]; then
+    swww img --outputs "$OUTPUTS" --transition-type fade --transition-duration 0.8 --transition-fps 60 --transition-bezier 0.22,1,0.36,1 -- "$BLACK_PNG" 2>/dev/null || true
+    sleep 0.2
+fi
+
 
 pkill -f "$WALLPAPER_ENGINE_BIN" 2>/dev/null || true
-sleep 0.5
+sleep 0.2
 
 WALLPAPER_IMAGE=""
 if PREVIEW_IMAGE=$(find_preview_image "$WALLPAPER_DIR"); then
@@ -68,3 +78,6 @@ for i in "${!MONITORS[@]}"; do
     nohup "${CMD[@]}" >/dev/null 2>&1 &
     disown
 done
+
+sleep 1.5
+swww clear 2>/dev/null || true

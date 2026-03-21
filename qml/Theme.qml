@@ -13,11 +13,11 @@ QtObject {
     property color accent: "#B27A8364"
     property color text: "#edd1bf"
 
-    Behavior on background   { ColorAnimation { duration: root.loaded ? 800 : 0; easing.type: Easing.OutCubic } }
-    Behavior on background90 { ColorAnimation { duration: root.loaded ? 800 : 0; easing.type: Easing.OutCubic } }
-    Behavior on border       { ColorAnimation { duration: root.loaded ? 800 : 0; easing.type: Easing.OutCubic } }
-    Behavior on accent       { ColorAnimation { duration: root.loaded ? 800 : 0; easing.type: Easing.OutCubic } }
-    Behavior on text         { ColorAnimation { duration: root.loaded ? 800 : 0; easing.type: Easing.OutCubic } }
+    Behavior on background   { ColorAnimation { duration: root.loaded ? 800 : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: [0.22, 1, 0.36, 1, 1, 1] } }
+    Behavior on background90 { ColorAnimation { duration: root.loaded ? 800 : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: [0.22, 1, 0.36, 1, 1, 1] } }
+    Behavior on border       { ColorAnimation { duration: root.loaded ? 800 : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: [0.22, 1, 0.36, 1, 1, 1] } }
+    Behavior on accent       { ColorAnimation { duration: root.loaded ? 800 : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: [0.22, 1, 0.36, 1, 1, 1] } }
+    Behavior on text         { ColorAnimation { duration: root.loaded ? 800 : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: [0.22, 1, 0.36, 1, 1, 1] } }
 
     property string walColorsPath: String(StandardPaths.writableLocation(StandardPaths.HomeLocation)).replace(/^file:\/\//, "") + "/.cache/wal/colors.json"
 

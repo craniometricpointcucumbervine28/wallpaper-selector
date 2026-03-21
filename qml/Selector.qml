@@ -191,7 +191,8 @@ Scope {
                         property: "opacity"
                         to: 0
                         duration: 240
-                        easing.type: Easing.OutCubic
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: [0.5, 0.5, 0.75, 1.0, 1, 1]
                     }
 
                     ScriptAction {
@@ -206,7 +207,8 @@ Scope {
                         property: "opacity"
                         to: 1
                         duration: 240
-                        easing.type: Easing.OutCubic
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: [0.5, 0.5, 0.75, 1.0, 1, 1]
                     }
 
                     ScriptAction {
@@ -1142,9 +1144,10 @@ Scope {
                 ? stripFileScheme(previousItem.folder).replace(/\/$/, "")
                 : ""
 
-                filteredModel.clear()
-                var newIndex = -1
                 
+                var newIndex = -1
+                let items = []
+
                 for (var i = 0; i < masterModel.count; i++) {
                     var item = masterModel.get(i)
                     var title = (item.title || "").toLowerCase()
@@ -1163,26 +1166,19 @@ Scope {
                     var matchesTag = window.filterTag === "" || (item.tags && item.tags.indexOf(window.filterTag.toLowerCase()) !== -1)
                     var matchesPlaylist = !window.showPlaylist || window.playlist.indexOf(stripFileScheme(item.folder).replace(/\/$/, "")) !== -1
                     if (matchesText && allowedContent && matchesFavorite && matchesStatic && matchesDynamic && matchesTag  && matchesPlaylist) {
-                        filteredModel.append(item)
+                        items.push({
+                            folder: item.folder,
+                            title: item.title,
+                            preview: item.preview,
+                            isStatic: item.isStatic,
+                            isFavorite: item.isFavorite,
+                            contentrating: item.contentrating,
+                            tags: item.tags || "[]"
+                        })
                     }
                 }
 
-                let items = []
-
-                for (let i = 0; i < filteredModel.count; i++) {
-                    let it = filteredModel.get(i)
-
-                    items.push({
-                        folder: it.folder,
-                        title: it.title,
-                        preview: it.preview,
-                        isStatic: it.isStatic,
-                        isFavorite: it.isFavorite,
-                        contentrating: it.contentrating,
-                        tags: it.tags || "[]"
-                    })
-                }
-
+               
                 if (window.showPlaylist) {
                     items.sort((a, b) => {
                         let aIdx = window.playlist.indexOf(stripFileScheme(a.folder).replace(/\/$/, ""))
@@ -1250,8 +1246,25 @@ Scope {
                     if (window.sortDescending) items.reverse()
                 }
 
-                filteredModel.clear()
-                items.forEach(item => filteredModel.append(item))
+                for (let i = filteredModel.count - 1; i >= 0; i--) {
+                    let found = false
+                    for (let j = 0; j < items.length; j++) {
+                        if (items[j].folder === filteredModel.get(i).folder) { found = true; break }
+                    }
+                    if (!found) filteredModel.remove(i)
+                }
+
+                for (let i = 0; i < items.length; i++) {
+                    let currentPos = -1
+                    for (let j = 0; j < filteredModel.count; j++) {
+                        if (filteredModel.get(j).folder === items[i].folder) { currentPos = j; break }
+                    }
+                    if (currentPos === -1) {
+                        filteredModel.insert(i, items[i])
+                    } else if (currentPos !== i) {
+                        filteredModel.move(currentPos, i, 1)
+                    }
+                }
 
                 if (previousFolder !== "") {
                     for (let i = 0; i < filteredModel.count; i++) {
@@ -1441,7 +1454,8 @@ Scope {
                         Behavior on opacity {
                             NumberAnimation {
                                 duration: 200
-                                easing.type: Easing.OutCubic
+                                easing.type: Easing.BezierSpline
+                                easing.bezierCurve: [0.5, 0.5, 0.75, 1.0, 1, 1]
                             }
                         }
 
@@ -1563,7 +1577,7 @@ Scope {
                         elide: Text.ElideRight
                         z: 1
 
-                        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.BezierSpline; easing.bezierCurve: [0.22, 1, 0.36, 1, 1, 1] } }
 
                         text: {
                             if (window.statusMessage !== "") return window.statusMessage
@@ -1607,7 +1621,7 @@ Scope {
                         orientation: ListView.Horizontal
                         spacing: 30
                         model: filteredModel
-                        cacheBuffer: 100
+                        cacheBuffer: 300
                         highlightMoveDuration: 300
                         boundsBehavior: Flickable.StopAtBounds
                         highlightFollowsCurrentItem: true
@@ -1623,7 +1637,8 @@ Scope {
                                 from: 0
                                 to: 1
                                 duration: 240
-                                easing.type: Easing.OutCubic
+                                easing.type: Easing.BezierSpline
+                                easing.bezierCurve: [0.5, 0.5, 0.75, 1.0, 1, 1]
                             }
 
                         delegate: Item {
@@ -1631,15 +1646,8 @@ Scope {
                             width:  200
                             height: 360
                             
-                            property bool isVisibleOnScreen: {
-                                if (!ListView.view) return false
-                                let view = ListView.view
-                                let cx = view.contentX
-                                let vw = view.width
-                                let itemLeft = x
-                                let itemRight = x + width 
-                                return itemRight >= cx && itemLeft <= (cx + vw)
-                            }
+                            property bool isVisibleOnScreen: delegateRoot.ListView.view ? 
+                            (x + width > ListView.view.contentX && x < ListView.view.contentX + ListView.view.width) : false
 
                             property int playlistPosition: {
                                 let path = folder ? stripFileScheme(folder).replace(/\/$/, "") : ""
@@ -1661,7 +1669,7 @@ Scope {
                                 anchors.fill: parent
                                 scale: active ? 1.2 : 1
                                 transformOrigin: Item.Center
-                                Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                                Behavior on scale { NumberAnimation { duration: 600; easing.type: Easing.BezierSpline; easing.bezierCurve: [0.22, 1, 0.36, 1, 1, 1] } }
 
                                 Rectangle {
                                     anchors.fill: parent
@@ -1698,6 +1706,7 @@ Scope {
                                             Component {
                                                 id: staticPreview
                                                 Image {
+                                                    id: staticImg
                                                     anchors.fill: parent
                                                     fillMode: Image.PreserveAspectCrop
                                                     asynchronous: true
@@ -1706,7 +1715,7 @@ Scope {
                                                     sourceSize.width: 200
                                                     sourceSize.height: 360
                                                     source: {
-                                                        if (!previewLoader.normalizedPath || !isVisibleOnScreen) return ""
+                                                        if (!previewLoader.normalizedPath) return ""
                                                         let fullPath
                                                         if (preview && preview !== "") fullPath = previewLoader.normalizedPath + "/" + preview
                                                         else if (isStatic) fullPath = previewLoader.normalizedPath
@@ -1714,12 +1723,26 @@ Scope {
                                                         let hash = Qt.md5(fullPath)
                                                         return "file://" + window.thumbFolder + "/" + hash + ".jpg"
                                                     }
+
+                                                    onStatusChanged: {
+                                                        if (status === Image.Ready) fadeIn.start()
+                                                    }
+                                                    NumberAnimation {
+                                                        id: fadeIn
+                                                        target: staticImg
+                                                        property: "opacity"
+                                                        from: 0; to: 1
+                                                        duration: 200
+                                                        easing.type: Easing.BezierSpline
+                                                        easing.bezierCurve: [0.5, 0.5, 0.75, 1.0, 1, 1]
+                                                    }
                                                 }
                                             }
 
                                             Component {
                                                 id: animatedPreview
                                                 AnimatedImage {
+                                                    id: animImg
                                                     anchors.fill: parent
                                                     fillMode: Image.PreserveAspectCrop
                                                     asynchronous: true
@@ -1730,6 +1753,19 @@ Scope {
                                                     source: previewLoader.normalizedPath !== ""
                                                         ? "file://" + previewLoader.normalizedPath + "/" + preview
                                                         : ""
+
+                                                    onStatusChanged: {
+                                                        if (status === AnimatedImage.Ready) fadeIn.start()
+                                                    }
+                                                    NumberAnimation {
+                                                        id: fadeIn
+                                                        target: animImg
+                                                        property: "opacity"
+                                                        from: 0; to: 1
+                                                        duration: 200
+                                                        easing.type: Easing.BezierSpline
+                                                        easing.bezierCurve: [0.5, 0.5, 0.75, 1.0, 1, 1]
+                                                    }
                                                 }
                                             }
                                         }
@@ -1743,8 +1779,9 @@ Scope {
                                         opacity: active ? 1 : 0
                                         visible: true
 
-                                        Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
-                                        Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                                        Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.BezierSpline; easing.bezierCurve: [0.5, 0.5, 0.75, 1.0, 1, 1] } }
+
+                                        Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.BezierSpline; easing.bezierCurve: [0.5, 0.5, 0.75, 1.0, 1, 1] } }
 
                                         Text {
                                             anchors.centerIn: parent
@@ -1774,7 +1811,7 @@ Scope {
                                         radius: 15
                                         antialiasing: true
                                         opacity: active ? 1 : 0
-                                        Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                                        Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.BezierSpline; easing.bezierCurve: [0.5, 0.5, 0.75, 1.0, 1, 1] } }
                                     }
                                 }
 
@@ -1790,7 +1827,7 @@ Scope {
                                     border.width: active ? 2 : 1
                                     border.color: active ? Theme.border : Theme.background
                                     Behavior on border.color { ColorAnimation { duration: 300 } }
-                                        Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                                    Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.BezierSpline; easing.bezierCurve: [0.5, 0.5, 0.75, 1.0, 1, 1] } }
 
                                     Text {
                                         anchors.centerIn: parent
@@ -1841,14 +1878,25 @@ Scope {
                                     }
 
                                     Text {
-                                        text: model.isFavorite ? "" : "♥"
+                                        text: ""
                                         color: Theme.border
                                         font.pixelSize: 28
                                         anchors.fill: parent
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
-                                        opacity: model.isFavorite || favContainer.mouseOverFav ? 1 : 0
-                                        Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                                        opacity: model.isFavorite ? 1 : 0
+                                        Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.BezierSpline; easing.bezierCurve: [0.22, 1, 0.36, 1, 1, 1] } }
+                                    }
+
+                                    Text {
+                                        text: "♥"
+                                        color: Theme.border
+                                        font.pixelSize: 28
+                                        anchors.fill: parent
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                        opacity: (!model.isFavorite && (model.isFavorite || favContainer.mouseOverFav)) ? 1 : 0
+                                        Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.BezierSpline; easing.bezierCurve: [0.22, 1, 0.36, 1, 1, 1] } }
                                     }
                                 }
                             }
@@ -1985,7 +2033,7 @@ Scope {
                     border.width: 1
                     z: 10
 
-                    Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                    Behavior on opacity { NumberAnimation { duration: 300; easing.type:  Easing.BezierSpline; easing.bezierCurve: [0.22, 1, 0.36, 1, 1, 1] } }
 
                     MouseArea {
                         anchors.fill: parent
