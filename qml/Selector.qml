@@ -244,6 +244,7 @@ Scope {
                         .filter(t => t.startsWith(partial) && t !== partial)
                         .map(t => ":tag " + t)
                     suggestionIndex = suggestions.length > 0 ? 0 : -1
+                    hoverItem = ""
                     return
                 }
 
@@ -1403,7 +1404,7 @@ Scope {
                                 return
                             }
                         }
-                        if (!searchInput.activeFocus && event.key !== Qt.Key_Backspace && event.key !== Qt.Key_Escape && event.key !== Qt.Key_Tab && event.text.length > 0) {
+                        if (!searchInput.activeFocus && !window.showHelp &&  event.key !== Qt.Key_Backspace && event.key !== Qt.Key_Escape && event.key !== Qt.Key_Tab && event.text.length > 0) {
                             searchInput.visible = true;
                             searchInput.forceActiveFocus();
                             searchInput.text = event.text; 
@@ -1476,8 +1477,10 @@ Scope {
 
                     MouseArea {
                         anchors.fill: parent
+                        hoverEnabled: false
                         enabled: window.suggestions.length > 0
                         z: 19
+                        propagateComposedEvents: true
                         onClicked: {
                             window.suggestions = []
                             window.suggestionIndex = -1
@@ -1505,22 +1508,42 @@ Scope {
                             model: window.suggestions
                             boundsBehavior: Flickable.StopAtBounds
                             currentIndex: window.suggestionIndex
+                            property string hoverItem: ""
+                            property bool hoverLocked: false
                             clip: true
 
                             onCurrentIndexChanged: {
-                                if (currentIndex >= 0)
+                                if (currentIndex >= 0) {
                                     positionViewAtIndex(currentIndex, ListView.Contain)
+                                }
                             }
 
+                            onModelChanged: {
+                                suggestionList.hoverItem = ""
+                                suggestionList.hoverLocked = false
+                            }
+                            
                             MouseArea {
                                 anchors.fill: parent
                                 acceptedButtons: Qt.NoButton
                                 propagateComposedEvents: true
                                 onWheel: (wheel) => {
+                                    suggestionList.hoverItem = ""
+                                    suggestionList.hoverLocked = true
+
+                                    let newIndex = window.suggestionIndex
+
+                                    if (newIndex < 0)
+                                        newIndex = 0
+
                                     if (wheel.angleDelta.y > 0)
-                                        window.suggestionIndex = Math.max(0, window.suggestionIndex - 1)
+                                        newIndex--
                                     else
-                                        window.suggestionIndex = Math.min(window.suggestions.length - 1, window.suggestionIndex + 1)
+                                        newIndex++
+
+                                    newIndex = Math.max(0, Math.min(window.suggestions.length - 1, newIndex))
+
+                                    window.suggestionIndex = newIndex
                                 }
                             }
 
@@ -1529,11 +1552,16 @@ Scope {
                                 width: autocompleteDropdown.width
                                 height: 32
                                 radius: 15
-                                color: index === window.suggestionIndex
+                                property bool suggestionHovered: false
+                               color: (suggestionList.hoverItem !== "")
+                                ? (modelData === suggestionList.hoverItem
                                     ? Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.1)
-                                    : "transparent"
+                                    : "transparent")
+                                : (index === suggestionList.currentIndex
+                                    ? Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.1)
+                                    : "transparent")
 
-                                Behavior on color { ColorAnimation { duration: 150 } }
+                                Behavior on color { ColorAnimation { duration: 200; easing.type: Easing.BezierSpline; easing.bezierCurve: [0.22, 1, 0.36, 1, 1, 1] } }
 
 
                                 Text {
@@ -1548,16 +1576,34 @@ Scope {
                                     font.pixelSize: 13
                                     elide: Text.ElideRight
                                     width: parent.width - 24
-                                    opacity: index === window.suggestionIndex ? 1 : 0.7
+                                    opacity: (suggestionList.hoverItem !== "")
+                                        ? (modelData === suggestionList.hoverItem ? 1 : 0.7)
+                                        : (index === window.suggestionIndex ? 1 : 0.7)
                                 }
 
                                 MouseArea {
                                     anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
                                     hoverEnabled: true
-                                    onClicked: {
-                                        acceptSuggestion(modelData)
+                                    cursorShape: Qt.PointingHandCursor
+
+                                    onPositionChanged: {
+                                        suggestionList.hoverLocked = false
                                     }
+
+                                    onEntered: {
+                                        if (!suggestionList.hoverLocked) {
+                                            suggestionList.hoverItem = modelData
+                                            window.suggestionIndex = index
+                                        }
+                                    }
+
+                                                                        onExited: {
+                                        if (suggestionList.hoverItem === modelData) {
+                                            suggestionList.hoverItem = ""
+                                        }
+                                    }
+
+                                    onClicked: acceptSuggestion(modelData)
                                 }
                             }
                         }
@@ -1773,7 +1819,7 @@ Scope {
 
                                     Rectangle {
                                         anchors.bottom: parent.bottom
-                                        width: parent.width; height: 33
+                                        width: parent.width; height: active ? 33 : 0
                                         color: Theme.background
                                         radius: 15
                                         opacity: active ? 1 : 0
@@ -1948,10 +1994,22 @@ Scope {
                         }
 
                             Keys.onTabPressed: (event) => {
-                                if (window.suggestions.length > 0 && window.suggestionIndex >= 0) {
-                                    acceptSuggestion(window.suggestions[window.suggestionIndex])
+                                if (window.suggestions.length > 0) {
+
+                                    let selectedItem = ""
+
+                                    if (suggestionList.hoverItem !== "") {
+                                        selectedItem = suggestionList.hoverItem
+                                    } else if (window.suggestionIndex >= 0) {
+                                        selectedItem = window.suggestions[window.suggestionIndex]
+                                    }
+
+                                    if (selectedItem !== "") {
+                                        acceptSuggestion(selectedItem)
+                                    }
+
+                                    event.accepted = true
                                 }
-                                event.accepted = true
                             }
                             Keys.onEscapePressed: (event) => {
                                 if (window.showHelp) {
@@ -1972,18 +2030,32 @@ Scope {
                             }
 
                             Keys.onUpPressed: (event) => {
-                                if (window.suggestions.length > 0) {
-                                    window.suggestionIndex = Math.max(0, window.suggestionIndex - 1)
-                                    event.accepted = true
-                                }
-                            }
+    if (window.suggestions.length > 0) {
+        suggestionList.hoverItem = ""
+        suggestionList.hoverLocked = true
 
-                            Keys.onDownPressed: (event) => {
-                                if (window.suggestions.length > 0) {
-                                    window.suggestionIndex = Math.min(window.suggestions.length - 1, window.suggestionIndex + 1)
-                                    event.accepted = true
-                                }
-                            }
+        let newIndex = window.suggestionIndex
+        if (newIndex < 0)
+            newIndex = 0
+
+        window.suggestionIndex = Math.max(0, newIndex - 1)
+        event.accepted = true
+    }
+}
+
+Keys.onDownPressed: (event) => {
+    if (window.suggestions.length > 0) {
+        suggestionList.hoverItem = ""
+        suggestionList.hoverLocked = true
+
+        let newIndex = window.suggestionIndex
+        if (newIndex < 0)
+            newIndex = 0
+
+        window.suggestionIndex = Math.min(window.suggestions.length - 1, newIndex + 1)
+        event.accepted = true
+    }
+}
 
                             Keys.onLeftPressed: (event) => {
                                 window.keyboardNavigation = true
@@ -2023,7 +2095,8 @@ Scope {
 
                 Rectangle {
                     id: helpPopup
-                    visible: window.showHelp
+                    visible: opacity > 0
+                    opacity: window.showHelp ? 1 : 0
                     anchors.centerIn: parent
                     width: 605
                     height: 472
@@ -2037,6 +2110,7 @@ Scope {
 
                     MouseArea {
                         anchors.fill: parent
+                        onWheel: (event) => event.accepted = true
                     }
                     
                     Text {
@@ -2061,7 +2135,7 @@ Scope {
                         opacity: 0.4
                     }   
 
-                    ScrollView {
+                    ListView {
                         anchors.top: helpTitle.bottom
                         anchors.bottom: helpFooter.top
                         anchors.left: parent.left
@@ -2069,80 +2143,75 @@ Scope {
                         anchors.margins: 24
                         anchors.topMargin: 12
                         anchors.bottomMargin: 12
-                        height: Math.min(helpColumn.implicitHeight, 400)
+                        boundsBehavior: Flickable.StopAtBounds
+
+                        MouseArea {
+                            hoverEnabled: true
+                        }
+
                         clip: true
-                        ScrollBar.vertical.policy: ScrollBar.AlwaysOff
-                        
-                        Column {
-                            id: helpColumn
-                            width: helpPopup.width - 48
-                            spacing: 0
+                        spacing: 0
 
-                            Repeater {
-                                model: [
-                                    { cmd: ":static          |  :s",   desc: "Toggle static wallpapers" },
-                                    { cmd: ":dynamic         |  :d",   desc: "Toggle dynamic wallpapers" },
-                                    { cmd: ":favorite        |  :f",   desc: "Toggle favorites filter" },
-                                    { cmd: "Customizeable    |  :sus", desc: "Toggle Mature content filter" },
-                                    { cmd: ":rename <name>   |  :rn ", desc: "Renames highlighted wallpaper" },
-                                    { cmd: ":rename          |  :rn ", desc: "Removes the current rename." },
-                                    { cmd: ":gif             |    ",   desc: "Toggle animated gif preview" },
-                                    { cmd: ":playlist<mins>  |  :pl",  desc: "Set playlist interval in minutes" },
-                                    { cmd: ":playlist        |  :pl",  desc: "Toggle playlist filter" },
-                                    { cmd: ":playlistshuffle |  :pls", desc: "Makes playlist random" },
-                                    { cmd: "Shift+Click      |    ",   desc: "Add/remove wallpaper from playlist" },
-                                    { cmd: "Shift+Enter      |    ",   desc: "Start/stop playlist when items added" },
-                                    { cmd: ":random          |  :r",   desc: "Apply a random dynamic wallpaper" },
-                                    { cmd: ":randomstatic    |  :rs",  desc: "Apply a random static wallpaper" },
-                                    { cmd: ":randomfav       |  :rf",  desc: "Apply a random favorited wallpaper" },
-                                    { cmd: ":export <filter> |  :ex",  desc: "Export filtered wallpaper as steam URLs" },
-                                    { cmd: ":setfolder       |  :sf",  desc: "Set dynamic wallpapers folder" },
-                                    { cmd: ":setstatic       |  :ss",  desc: "Set static wallpapers folder" },
-                                    { cmd: ":setthumb        |  :st",  desc: "Set thumbnail cache folder" },
-                                    { cmd: ":setffmpeg       |     ",  desc: "Set ffmpeg path" },
-                                    { cmd: ":clearcache      |  :cc",  desc: "Clear thumbnail cache and regenerate" },
-                                    { cmd: ":reload          |  :rl",  desc: "Reload wallpaper folders" },
-                                    { cmd: ":open            |  :o ",  desc: "Open workshop for highlighted wallpaper" },
-                                    { cmd: ":id              |     ",  desc: "Copy highlighted wallpapers id" },
-                                    { cmd: ":tag <name>      |     ",  desc: "Filter by tag" },
-                                    { cmd: ":tag             |     ",  desc: "Clear tag filter" },
-                                    { cmd: ":sort            |     ",  desc: "Sorts wallpapers" },
-                                    { cmd: "Sort Arguments   |", desc: "default, name, recent, favorite, random"},
-                                    { cmd: "Sort Shortcuts   |", desc: "d,       n,    r,      f,"},
-                                    { cmd: ":help            |   :h",  desc: "Show this help" },
-                                ]
+                        model: [
+                            { cmd: ":static          |  :s",   desc: "Toggle static wallpapers" },
+                            { cmd: ":dynamic         |  :d",   desc: "Toggle dynamic wallpapers" },
+                            { cmd: ":favorite        |  :f",   desc: "Toggle favorites filter" },
+                            { cmd: "Customizeable    |  :sus", desc: "Toggle Mature content filter" },
+                            { cmd: ":rename <name>   |  :rn ", desc: "Renames highlighted wallpaper" },
+                            { cmd: ":rename          |  :rn ", desc: "Removes the current rename." },
+                            { cmd: ":gif             |    ",   desc: "Toggle animated gif preview" },
+                            { cmd: ":playlist<mins>  |  :pl",  desc: "Set playlist interval in minutes" },
+                            { cmd: ":playlist        |  :pl",  desc: "Toggle playlist filter" },
+                            { cmd: ":playlistshuffle |  :pls", desc: "Makes playlist random" },
+                            { cmd: "Shift+Click      |    ",   desc: "Add/remove wallpaper from playlist" },
+                            { cmd: "Shift+Enter      |    ",   desc: "Start/stop playlist when items added" },
+                            { cmd: ":random          |  :r",   desc: "Apply a random dynamic wallpaper" },
+                            { cmd: ":randomstatic    |  :rs",  desc: "Apply a random static wallpaper" },
+                            { cmd: ":randomfav       |  :rf",  desc: "Apply a random favorited wallpaper" },
+                            { cmd: ":export <filter> |  :ex",  desc: "Export filtered wallpaper as steam URLs" },
+                            { cmd: ":setfolder       |  :sf",  desc: "Set dynamic wallpapers folder" },
+                            { cmd: ":setstatic       |  :ss",  desc: "Set static wallpapers folder" },
+                            { cmd: ":setthumb        |  :st",  desc: "Set thumbnail cache folder" },
+                            { cmd: ":setffmpeg       |     ",  desc: "Set ffmpeg path" },
+                            { cmd: ":clearcache      |  :cc",  desc: "Clear thumbnail cache and regenerate" },
+                            { cmd: ":reload          |  :rl",  desc: "Reload wallpaper folders" },
+                            { cmd: ":open            |  :o ",  desc: "Open workshop for highlighted wallpaper" },
+                            { cmd: ":id              |     ",  desc: "Copy highlighted wallpapers id" },
+                            { cmd: ":tag <name>      |     ",  desc: "Filter by tag" },
+                            { cmd: ":tag             |     ",  desc: "Clear tag filter" },
+                            { cmd: ":sort            |     ",  desc: "Sorts wallpapers" },
+                            { cmd: "Sort Arguments   |", desc: "default, name, recent, favorite, random"},
+                            { cmd: "Sort Shortcuts   |", desc: "d,       n,    r,      f,"},
+                            { cmd: ":help            |   :h",  desc: "Show this help" }
+                        ]
 
-                                delegate: Rectangle {
-                                    width: helpColumn.width
-                                    height: 36
-                                    color: index % 2 === 0 ? "transparent" : Qt.rgba(
-                                        Theme.text.r, Theme.text.g, Theme.text.b, 0.04)
-                                    radius: 6
+                        delegate: Rectangle {
+                            width: ListView.view.width
+                            height: 36
+                            radius: 6
 
-                                    Row {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        anchors.left: parent.left
-                                        anchors.right: parent.right
-                                        anchors.leftMargin: 8
-                                        anchors.rightMargin: 8
-                                        spacing: 0
+                            color: index % 2 === 0
+                                ? "transparent"
+                                : Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.04)
 
-                                        Text {
-                                            width: 220
-                                            text: modelData.cmd
-                                            color: Theme.text
-                                            font.pixelSize: 13
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
+                            Row {
+                                anchors.fill: parent
+                                anchors.margins: 8
 
-                                        Text {
-                                            text: modelData.desc
-                                            color: Theme.text
-                                            font.pixelSize: 13
-                                            opacity: 0.6
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                    }
+                                Text {
+                                    width: 220
+                                    text: modelData.cmd
+                                    color: Theme.text
+                                    font.pixelSize: 13
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+
+                                Text {
+                                    text: modelData.desc
+                                    color: Theme.text
+                                    font.pixelSize: 13
+                                    opacity: 0.6
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                             }
                         }
