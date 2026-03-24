@@ -365,7 +365,20 @@ Scope {
 
                 console.log("Applying wallpaper:", folder);
 
-                wallpaperProcess.command = ["/bin/bash", scriptPath, folder];
+                let args = ["/bin/bash", scriptPath,];
+
+                if (!item.isStatic) {
+                    let cleanFolder = stripFileScheme(item.folder).replace(/\/$/, "");
+                    let fullPath = item.preview && item.preview !== "" ? cleanFolder + "/" + item.preview : cleanFolder;
+
+                    let hash = Qt.md5(fullPath);
+
+                    args.push("--hash", hash);
+                    args.push("--thumb-folder", window.thumbFolder);
+                }
+                args.push(folder);
+
+                wallpaperProcess.command = args;
                 wallpaperProcess.startDetached();
 
                 window.lastWallpaperPath = folder;
@@ -373,7 +386,7 @@ Scope {
             }
 
             function queueThumbnail(filePath) {
-                let clean = stripFileScheme(filePath);
+                let clean = stripFileScheme(filePath).replace(/\/$/, "");
                 let ext = clean.split(".").pop().toLowerCase();
 
                 let hash = Qt.md5(clean);
@@ -1014,7 +1027,8 @@ Scope {
                             preview: "",
                             isStatic: false,
                             isFavorite: window.favorites.includes(cleanPath),
-                            tags: "[]"
+                            tags: "[]",
+                            hash: Qt.md5(cleanPath)
                         });
 
                         let index = masterModel.count - 1;

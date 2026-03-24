@@ -114,6 +114,7 @@ read -rp "Install wallpaper reloader? [Y/n] " install_reloader
 install_reloader="${install_reloader:-Y}"
 
 if [[ "${install_reloader,,}" == "y" ]]; then
+    sed -i "s|WALLPAPER_ENGINE_BIN=.*|WALLPAPER_ENGINE_BIN=\"$ENGINE_PATH\"|" "$BIN_DIR/wallpaper-reloader.sh"
     cp "$SCRIPT_DIR/scripts/wallpaper-reloader.sh" "$BIN_DIR/wallpaper-reloader.sh"
     chmod +x "$BIN_DIR/wallpaper-reloader.sh"
     info "Reloader installed to $BIN_DIR/wallpaper-reloader.sh"
