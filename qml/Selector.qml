@@ -149,7 +149,7 @@ Scope {
                 id: playlistDaemon
                 Component.onCompleted: {
                     let home = stripFileScheme(StandardPaths.writableLocation(StandardPaths.HomeLocation));
-                    command = ["/bin/bash", "-c", `pgrep -fx 'bash.*wallpaper-playlist.sh' > /dev/null || { nohup ${home}/.local/bin/wallpaper-playlist.sh > /dev/null 2>&1 & disown; }`];
+                    command = ["/bin/bash", "-c", `pgrep -fx 'bash.*wallpaper-playlist.sh' > /dev/null || { nohup ${shQuote(home + "/.local/bin/wallpaper-playlist.sh")} > /dev/null 2>&1 & disown; }`];
                     startDetached();
                 }
             }
@@ -229,6 +229,14 @@ Scope {
                 }
             }
 
+            function shQuote(s) {
+                return "'" + String(s).replace(/'/g, "'\\''") + "'";
+            }
+
+            function shJoin(parts) {
+                return parts.map(shQuote).join(" ");
+            }
+
             function setHoveredIndex(newIndex) {
                 if (hoveredIndex === newIndex)
                     return
@@ -273,17 +281,14 @@ Scope {
                     let spaceIdx = raw.indexOf(" ");
                     let partial = raw.substring(spaceIdx + 1);
                     if (partial.length > 0) {
-                        let escaped = partial.replace(/'/g, "'\\''");
                         let cmd;
                         if (partial.endsWith("/")) {
-                            cmd = `find '${escaped}' -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sed 's|$|/|' | head -20 > /tmp/qs-path-complete.txt`;
+                            cmd = "find " + shQuote(partial) + " -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sed 's|$|/|' | head -20 > /tmp/qs-path-complete.txt";
                         } else {
                             let lastSlash = partial.lastIndexOf("/");
                             let dir = lastSlash >= 0 ? partial.substring(0, lastSlash + 1) : "/";
                             let base = lastSlash >= 0 ? partial.substring(lastSlash + 1) : partial;
-                            let escapedDir = dir.replace(/'/g, "'\\''");
-                            let escapedBase = base.replace(/'/g, "'\\''");
-                            cmd = `find '${escapedDir}' -maxdepth 1 -mindepth 1 -type d -iname '*${escapedBase}*' 2>/dev/null | sed 's|$|/|' | head -20 > /tmp/qs-path-complete.txt`;
+                            cmd = "find " + shQuote(dir) + " -maxdepth 1 -mindepth 1 -type d -iname " + shQuote("*" + base + "*") + " 2>/dev/null | sed 's|$|/|' | head -20 > /tmp/qs-path-complete.txt";
                         }
                         pathCompleteProcess.command = ["/bin/bash", "-c", cmd];
                         pathCompleteProcess.startDetached();
@@ -413,18 +418,23 @@ Scope {
                 window.validThumbs.add(hash);
                 let thumbPath = window.thumbFolder + "/" + hash + ".jpg";
 
+                let qThumbFolder = shQuote(window.thumbFolder);
+                let qThumbPath = shQuote(thumbPath);
+                let qClean = shQuote(clean);
+                let qFfmpeg = shQuote(window.ffmpegPath);
+
                 let cmd = `
-                    mkdir -p "${window.thumbFolder}" &&
-                    if [ ! -f "${thumbPath}" ]; then
-                        case "${ext}" in
-                            mp4|webm|mov|mkv|gif)
-                                "${window.ffmpegPath}" -y -ss 0.5 -i "${clean}" -frames:v 1 -vf "scale=500:-1" "${thumbPath}"
+                    mkdir -p -- ${qThumbFolder} &&
+                    if [ ! -f ${qThumbPath} ]; then
+                        case ${shQuote(ext)} in
+                            'mp4'|'webm'|'mov'|'mkv'|'gif')
+                                ${qFfmpeg} -y -ss 0.5 -i ${qClean} -frames:v 1 -vf 'scale=500:-1' ${qThumbPath}
                                 ;;
-                            jpg|jpeg|png)
-                                "${window.ffmpegPath}" -y -i "${clean}" -vf "scale=500:-1" "${thumbPath}"
+                            'jpg'|'jpeg'|'png')
+                                ${qFfmpeg} -y -i ${qClean} -vf 'scale=500:-1' ${qThumbPath}
                                 ;;
                             *)
-                                cp "${clean}" "${thumbPath}"
+                                cp -- ${qClean} ${qThumbPath}
                                 ;;
                         esac
                     fi
@@ -445,14 +455,16 @@ Scope {
             function cleanupThumbnails(validSet) {
                 if (validSet.size === 0)
                     return;
+
                 let hashes = Array.from(validSet).join("|");
+                let qThumbFolder = shQuote(window.thumbFolder);
 
                 let cmd = `
                     shopt -s nullglob
-                    for file in "${thumbFolder}"/*.jpg; do
+                    for file in ${qThumbFolder}/*.jpg; do
                         name=$(basename "$file" .jpg)
                         if [[ ! "$name" =~ ^(${hashes})$ ]]; then
-                            rm "$file"
+                            rm -- "$file"
                         fi
                     done
                 `;
@@ -562,8 +574,11 @@ Scope {
                     usageMap: window.usageMap
                 });
 
-                let escaped = jsonStr.replace(/'/g, "'\\''");
-                writeProcess.command = ["/bin/bash", "-c", `echo '${escaped}' > "${settingsPath}"`];
+                writeProcess.command = [
+                    "/bin/bash",
+                    "-c",
+                    "printf %s " + shQuote(jsonStr) + " > " + shQuote(settingsPath)
+                ];
                 writeProcess.startDetached();
             }
 
@@ -628,13 +643,28 @@ Scope {
 
                     if (cmd.startsWith(":setffmpeg ")) {
                         let newPath = rawCmd.replace(/^:setffmpeg\s+/i, "").trim();
-                        if (newPath !== "") {
-                            window.ffmpegPath = newPath;
-                            saveSettings();
-                            filterWallpapersAnimation();
-                            showStatus("Set ffmpeg path as: " + newPath);
+                        let fileName = newPath.split("/").pop();
+                        let badChars = /[\n\r\t"'`]/.test(newPath);
+
+                        if (newPath === "" || !newPath.startsWith("/") || fileName !== "ffmpeg" || badChars) {
+                            showStatus("Error! ffmpeg path must be a clean absolute path ending in /ffmpeg");
+                            window.suppressTextHandler = true;
+                            searchInput.text = "";
+                            window.suppressTextHandler = false;
+                            searchDebounceTimer.stop();
+                            listView.forceActiveFocus();
+                            return;
                         }
+
+                        window.ffmpegPath = newPath;
+                        saveSettings();
+                        filterWallpapersAnimation();
+                        showStatus("Set ffmpeg path as: " + newPath);
+
+                        window.suppressTextHandler = true;
                         searchInput.text = "";
+                        window.suppressTextHandler = false;
+                        searchDebounceTimer.stop();
                         listView.forceActiveFocus();
                         return;
                     }
@@ -931,8 +961,11 @@ Scope {
                         }).join("\n");
 
                         let exportPath = stripFileScheme(Qt.resolvedUrl("exported-wallpapers.txt"));
-                        let escaped = lines.replace(/'/g, "'\\''");
-                        writeProcess.command = ["/bin/bash", "-c", `echo '${escaped}' > "${exportPath}"`];
+                        writeProcess.command = [
+                            "/bin/bash",
+                            "-c",
+                            "printf %s " + shQuote(lines) + " > " + shQuote(exportPath)
+                        ];
                         writeProcess.startDetached();
                         showStatus("Exported " + exportItems.length + " wallpapers to export.txt");
                         window.suppressTextHandler = true;
@@ -1094,10 +1127,16 @@ Scope {
                 }
             }
 
-            function deleteFolder(path) {
-                if (!path || path === "")
+           function deleteFolder(path) {
+                let cleanPath = stripFileScheme(path).replace(/\/$/, "");
+                let allowed = stripFileScheme(window.thumbFolder).replace(/\/$/, "");
+
+                if (cleanPath !== allowed) {
+                    console.log("Refusing to delete non-thumb folder:", cleanPath);
                     return;
-                deleteFolderProcess.command = ["/bin/bash", "-c", `rm -rf "${path}"`];
+                }
+
+                deleteFolderProcess.command = ["/bin/bash", "-c", "rm -rf -- " + shQuote(cleanPath)];
                 deleteFolderProcess.startDetached();
             }
 
