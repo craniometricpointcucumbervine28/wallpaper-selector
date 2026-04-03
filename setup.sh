@@ -114,8 +114,8 @@ read -rp "Install wallpaper reloader? [Y/n] " install_reloader
 install_reloader="${install_reloader:-Y}"
 
 if [[ "${install_reloader,,}" == "y" ]]; then
-    sed -i "s|WALLPAPER_ENGINE_BIN=.*|WALLPAPER_ENGINE_BIN=\"$ENGINE_PATH\"|" "$BIN_DIR/wallpaper-reloader.sh"
     cp "$SCRIPT_DIR/scripts/wallpaper-reloader.sh" "$BIN_DIR/wallpaper-reloader.sh"
+    sed -i "s|WALLPAPER_ENGINE_BIN=.*|WALLPAPER_ENGINE_BIN=\"$ENGINE_PATH\"|" "$BIN_DIR/wallpaper-reloader.sh"
     chmod +x "$BIN_DIR/wallpaper-reloader.sh"
     info "Reloader installed to $BIN_DIR/wallpaper-reloader.sh"
 else
@@ -148,6 +148,7 @@ chmod +x \
 info "Scripts installed to $BIN_DIR"
 
 heading "Pywal theme integration..."
+if [[ -n "$WAL_CMD" ]]; then
     info "Running wal to generate initial theme..."
     $WAL_CMD -R -n -q 2>/dev/null || true
 else
