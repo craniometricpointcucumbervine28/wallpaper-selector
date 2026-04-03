@@ -2053,7 +2053,6 @@ Scope {
                                                         asynchronous: true
                                                         smooth: true
                                                         cache: true
-                                                        sourceSize.width: scaleContainer.width
                                                         playing: isVisibleOnScreen
                                                         source: previewLoader.normalizedPath !== "" ? "file://" + previewLoader.normalizedPath + "/" + preview : ""
 
